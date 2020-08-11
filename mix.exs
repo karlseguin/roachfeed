@@ -5,12 +5,12 @@ defmodule RoachFeed.MixProject do
 
 	def project do
 		[
-			app: :roach_feed,
+			app: :roachfeed,
 			deps: deps(),
 			elixir: "~> 1.10",
 			version: @version,
 			elixirc_paths: paths(Mix.env),
-			description: "MonetDB driver",
+			description: "CockroachDB ChangeFeed Consumer",
 			package: [
 				licenses: ["MIT"],
 				links: %{
