@@ -8,12 +8,13 @@ defmodule RoachFeed.Tests do
 		query!("drop table if exists table_b")
 		query!("create table table_a (id int primary key, value text)")
 		query!("create table table_b (id text primary key, value int)")
+		query!("set cluster setting kv.rangefeed.enabled = true")
 		:ok
 	end
 
-	test "gets existing changes" do
+	test "this is hard to test, let's just do what we can" do
 		query!("insert into table_a (id, value) values ($1, $2), ($3, $4)", [1, "over", 2, "9000!"])
-		start_consumer()
+		pid = start_consumer()
 		change = forwarded(:change)
 		assert change.key == [1]
 		assert change.table == "table_a"
@@ -23,28 +24,45 @@ defmodule RoachFeed.Tests do
 		assert change.key == [2]
 		assert change.table == "table_a"
 		assert change.data ==  %{after: %{id: 2, value: "9000!"}}
+
+		%{resolved: r} = forwarded(:resolved)
+
+		query!("insert into table_a (id, value) values ($1, $2)", [3, "spice"])
+		change = forwarded(:change)
+		assert change.key == [3]
+		assert change.table == "table_a"
+		assert change.data ==  %{after: %{id: 3, value: "spice"}}
+
+		GenServer.stop(pid)
+
+		start_consumer(resolved: r)
+		change = forwarded(:change)
+		assert change.key == [3]
+		assert change.table == "table_a"
+		assert change.data ==  %{after: %{id: 3, value: "spice"}}
 	end
 
 	defp query!(sql, args \\ []) do
 		Postgrex.query!(:testdb, sql, args)
 	end
 
-	defp start_consumer() do
-		opts = [
+	defp start_consumer(opts \\ []) do
+		default = [
 			test: self(),  # used by our fake consumer in setup to forward messages to this pid (our test)
 			port: 26257,
 			username: "root",
 			hostname: "localhost",
 			database: "roachfeed_test"
 		]
-		{:ok, _} = FakeConsumer.start_link(opts)
+		{:ok, pid} = FakeConsumer.start_link(Keyword.merge(default, opts))
+		pid
 	end
 
 	def forwarded(type) do
 		receive do
 			{^type, msg} -> msg
 		after
-			100 -> nil
+			2000 -> nil
 		end
 	end
 
