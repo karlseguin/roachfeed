@@ -87,7 +87,9 @@ defmodule RoachFeed do
 			end
 
 			defp process_data(socket, <<type, length::big-32, rest::binary>>, state) when byte_size(rest) < (length-4) do
-				with {:ok, payload} <- :gen_tcp.recv(socket, length-4, @timeout) do
+				missing = length - 4 - byte_size(rest)
+				with {:ok, payload} <- :gen_tcp.recv(socket, missing, @timeout) do
+					payload = :erlang.iolist_to_binary([rest, payload])
 					process_message(type, payload, state)
 				end
 			end
