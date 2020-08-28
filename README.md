@@ -1,6 +1,6 @@
 # CockroachdB ChangeFeed Consumer
 
-Consumes a CockroachDB Core ChangeFeed. Doesn't use Postgrex (except for testing), doesn't open pool.
+Consumes a CockroachDB Core ChangeFeed. Doesn't use Postgrex (except for testing). Doesn't open a pool. It open a single (per instance) tcp connection which is optimized for dealing with feed data.
 
 Usage:
 
@@ -15,11 +15,10 @@ defmodule MyModule do
 	end
 
 	# Called once the connection is estasblished.
-	# `for` must be specific (it can be a list of table, or a single table)
+	# `for` must be specified (it can be a list of table, or a single table)
 	# `with` is an optional keyword list that matches the options that
 	#        'experimental changefeed for ...' supports
-	#
-	#        (Note that it's OK to pass `nil` to the `cursor` key)
+	#        (Note: it's OK to pass `nil` to the `cursor` key)
 	defp query(state) do
 		config = [
 			for: ["table_1", "table_2"]
@@ -38,7 +37,8 @@ defmodule MyModule do
 	end
 
 	# `key` and `data` are not parsed. You may want to Jason.decode/1 them.
-	# If `envelope: "key_only` is passed to the `with:` keyword list of # `query/1`, then `data` will be nil.
+	# If `envelope: "key_only` is passed to the `with:` keyword list of
+	# `query/1`, then `data` will be nil.
 	defp handle_change(table, key, data, state) do
 		IO.inspect({table, key, data})
 		state
