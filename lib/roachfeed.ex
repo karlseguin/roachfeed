@@ -16,9 +16,10 @@ defmodule RoachFeed do
 			end
 
 			def handle_continue(:init, opts) do
-				socket = connect(opts, 0)
+				{state, config} = setup(opts)
+				socket = connect(config, 0)
 				Process.put(:socket, socket)
-				{:noreply, setup(opts)}
+				{:noreply, state}
 			end
 
 			defp connect(opts, tries) do
@@ -42,7 +43,7 @@ defmodule RoachFeed do
 				end
 			end
 
-			defp setup(opts), do: nil
+			defp setup(opts), do: {nil, opts}
 			defoverridable [setup: 1]
 
 			defp connect(opts) do
@@ -66,7 +67,6 @@ defmodule RoachFeed do
 					{:error, err} ->
 						# not sure this is right
 						:gen_tcp.close(socket)
-						:timer.sleep(5_000)
 						{:stop, err, state}
 				end
 			end
@@ -106,6 +106,11 @@ defmodule RoachFeed do
 			# server properties, ignore
 			defp process_message(?S, _msg, state), do: {:ok, state}
 
+			# reply to the bind from the experimental changefeed query
+			# can't process this synchronously, because cockroachdb doesn't send the
+			# reply until there's data in the changefeed
+			defp process_message(?2, _msg, state), do: {:ok, state}
+
 			defp process_message(?E, error, state) do
 				{:error, RoachFeed.Error.cockroach(error)}
 			end
@@ -113,10 +118,9 @@ defmodule RoachFeed do
 			# ready for query
 			defp process_message(?Z, _msg, state) do
 				socket = Process.get(:socket)
-				{config, state}  = query(state)
+				{config, state} = query(state)
 
 				sql = ["experimental changefeed for ", config |> Keyword.fetch!(:for) |> List.wrap() |> Enum.join(", ")]
-
 				{sql, values} = case config[:with] do
 					nil -> {sql, []}
 					w ->
@@ -147,9 +151,10 @@ defmodule RoachFeed do
 						{count + 1, length + byte_size(value) + 4, acc}
 				end)
 
-				bind_execute_sync = [
+				bind_execute_close_sync = [
 					[?B, 0, 0, 0, 14 + args_length, 0, 0, 0, 0, <<args_count::big-16>>, args, 0, 1, 0, 1],
 					<<?E, 0, 0, 0, 9, 0, 0, 0, 0, 0>>,
+					<<?C, 0, 0, 0, 5, ?S>>,
 					<<?S, 0, 0, 0, 4>>
 				]
 
@@ -157,7 +162,7 @@ defmodule RoachFeed do
 				     {?t, _} <- RoachFeed.recv_message(socket), # parameter info
 				     {?T, _} <- RoachFeed.recv_message(socket), # column info
 				     {?Z, _} <- RoachFeed.recv_message(socket), # wait until server is ready
-				     {?2, _} <- RoachFeed.send_recv_message(socket, bind_execute_sync)
+				     :ok <- :gen_tcp.send(socket, bind_execute_close_sync)
 				do
 					{:ok, state}
 				else

@@ -7,7 +7,7 @@ Usage:
 In your mix.exs file, add the project dependency:
 
 ```
-{:roachfeed, "~> 0.0.4"}
+{:roachfeed, "~> 0.0.5"}
 ```
 
 Next create a module:
@@ -16,10 +16,10 @@ Next create a module:
 defmodule MyModule do
 	use RoachFeed
 
-	# Optional, this will be the state passed to query/1, handle_resolve/2
-	# and handle_change/4
-	defp setup(opts) do
-		state
+	defp setup(_opts) do
+		state = nil
+		conf = Application.fetch_env!(:app, :config)
+		{conf, state}
 	end
 
 	# Called once the connection is estasblished.
@@ -57,5 +57,5 @@ end
 Start `MyModule` (as a child of a supervisor most likely), passing it the typically connection string value:
 
 ```elixir
-{MyModule, [port: 26257, hostname: "127.0.0.1", database: "...", username: "...", password: "..."]}
+{MyModule, [any_opts_you_want_passed_to_setup/1]}
 ```
