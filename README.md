@@ -4,6 +4,12 @@ Consumes a CockroachDB Core ChangeFeed. Doesn't use Postgrex (except for testing
 
 Usage:
 
+In your mix.exs file, add the project dependency:
+
+{:roachfeed, "~> 0.0.2"}
+
+Next create a module:
+
 ```elixir
 defmodule MyModule do
 	use RoachFeed
@@ -21,7 +27,7 @@ defmodule MyModule do
 	#        (Note: it's OK to pass `nil` to the `cursor` key)
 	defp query(state) do
 		config = [
-			for: ["table_1", "table_2"]
+			for: ["table_1", "table_2"],
 			with: [
 				resolved: "10s",
 				cursor: elem(state, 2)[:resolved]

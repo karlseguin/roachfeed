@@ -66,6 +66,7 @@ defmodule RoachFeed do
 					{:error, err} ->
 						# not sure this is right
 						:gen_tcp.close(socket)
+						:timer.sleep(5_000)
 						{:stop, err, state}
 				end
 			end
