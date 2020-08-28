@@ -47,7 +47,7 @@ defmodule RoachFeed do
 
 			defp connect(opts) do
 				port = Keyword.get(opts, :port, 26257)
-				host = String.to_charlist(Keyword.get(opts, :host, "127.0.0.1"))
+				host = String.to_charlist(Keyword.get(opts, :hostname, "127.0.0.1"))
 
 				with {:ok, socket} <- :gen_tcp.connect(host, port, [packet: :raw, mode: :binary, active: false], @timeout),
 				     :ok <- :inet.setopts(socket, send_timeout: @timeout),

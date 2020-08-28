@@ -6,7 +6,9 @@ Usage:
 
 In your mix.exs file, add the project dependency:
 
-{:roachfeed, "~> 0.0.2"}
+```
+{:roachfeed, "~> 0.0.3"}
+```
 
 Next create a module:
 
