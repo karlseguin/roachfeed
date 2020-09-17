@@ -1,30 +1,34 @@
 defmodule RoachFeed.Tests.FakeConsumer do
 	use RoachFeed
 
-	defp setup(opts), do: {1, Keyword.fetch!(opts, :test), opts}
+	defp setup(opts) do
+		state = {1, Keyword.fetch!(opts, :test), opts}
+		{state, opts}
+	end
 
-	defp query(state) do
-		config = [
+	defp query({count, pid, opts} = _state) do
+		change_feed = [
 			for: "table_a",
 			with: [
 				resolved: "1s",
-				cursor: elem(state, 2)[:resolved]
+				cursor: opts[:resolved]
 			]
 		]
-		{config, state}
+		state = {count, pid} # we don't need opts anymore
+		{state, change_feed}
 	end
 
-	defp handle_resolved(msg, {count, pid, opts}) do
+	defp handle_resolved(msg, {count, pid}) do
 		send(pid, {:resolved, Jason.decode!(msg, keys: :atoms)})
-		{count + 1, pid, opts}
+		{count + 1, pid}
 	end
 
-	defp handle_change(table, key, data, {count, pid, opts}) do
+	defp handle_change(table, key, data, {count, pid}) do
 		send(pid, {:change, %{table: table, key: Jason.decode!(key), data: Jason.decode!(data, keys: :atoms)}})
-		{count + 1, pid, opts}
+		{count + 1, pid}
 	end
 
-	def handle_cast({:test, pid}, {count, _, opts}) do
-		{:noreply, {count, pid, opts}}
+	def handle_cast({:test, pid}, {count, _}) do
+		{:noreply, {count, pid}}
 	end
 end

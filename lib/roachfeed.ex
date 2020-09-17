@@ -20,6 +20,10 @@ defmodule RoachFeed do
 				socket = connect(config, 0)
 				Process.put(:socket, socket)
 				{:noreply, state}
+			rescue
+				err ->
+					:timer.sleep(:timer.seconds(1))
+					reraise err, __STACKTRACE__
 			end
 
 			defp connect(opts, tries) do
@@ -118,7 +122,7 @@ defmodule RoachFeed do
 			# ready for query
 			defp process_message(?Z, _msg, state) do
 				socket = Process.get(:socket)
-				{config, state} = query(state)
+				{state, config} = query(state)
 
 				sql = ["experimental changefeed for ", config |> Keyword.fetch!(:for) |> List.wrap() |> Enum.join(", ")]
 				{sql, values} = case config[:with] do

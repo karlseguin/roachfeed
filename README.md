@@ -18,8 +18,8 @@ defmodule MyModule do
 
 	defp setup(_opts) do
 		state = nil
-		conf = Application.fetch_env!(:app, :config)
-		{conf, state}
+		connection_config = Application.fetch_env!(:app, :config)
+		{state, connection_config}
 	end
 
 	# Called once the connection is estasblished.
@@ -28,14 +28,14 @@ defmodule MyModule do
 	#        'experimental changefeed for ...' supports
 	#        (Note: it's OK to pass `nil` to the `cursor` key)
 	defp query(state) do
-		config = [
+		changefeed_config = [
 			for: ["table_1", "table_2"],
 			with: [
 				resolved: "10s",
 				cursor: elem(state, 2)[:resolved]
 			]
 		]
-		{config, state}
+		{state, changefeed_config}
 	end
 
 	# `msg` is not parsed. You probably want to Jason.decode!/1 it.
