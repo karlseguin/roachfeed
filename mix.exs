@@ -1,7 +1,7 @@
 defmodule RoachFeed.MixProject do
 	use Mix.Project
 
-	@version "0.0.6"
+	@version "0.0.7"
 
 	def project do
 		[
@@ -32,9 +32,9 @@ defmodule RoachFeed.MixProject do
 
 	defp deps do
 		[
-			{:jason, "~>1.2.1", only: :test},
-			{:postgrex, "~>0.15.5", only: :test},
-			{:ex_doc, "~> 0.21.2", only: :dev, runtime: false},
+			{:jason, "~>1.2.2", only: :test},
+			{:postgrex, "~>0.15.6", only: :test},
+			{:ex_doc, "~> 0.22.6", only: :dev, runtime: false},
 		]
 	end
 end
